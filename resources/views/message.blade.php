@@ -76,7 +76,7 @@
   <script src="{!!  URL::to('js/login.js') !!}"></script>
  
   @endsection
-  <footer class="fixed-bottom">@include('footer')</footer>
+<footer class="fixed-bottom">@include('footer')</footer>
 
 
 

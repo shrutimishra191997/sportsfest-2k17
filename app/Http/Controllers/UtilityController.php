@@ -18,7 +18,7 @@ class UtilityController extends Controller
     }
 
       public function core_comittee(){
-            $Test= DB::table('core_commitee')->get();
+            $Test= DB::table('core_commitee')->where('Pmail','!=','5988')->get();
             //echo json_encode($Test);
             return view('core_comittee')->with('det', $Test);
     }

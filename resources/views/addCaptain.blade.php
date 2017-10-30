@@ -47,45 +47,26 @@
                 }
     });
           }
-          /*function getResponse()
-  {
-    var d;
-            $.ajax({
-                type: 'POST',
-                url: '../submit',
-                data: 
-                   $('form[name="shrey"]').serializeArray(),
-                    'Event': document.getElementById("Event"),
-                    'Dept':document.getElementById("Dept"),
-                    'LibId':document.getElementById("LibId"),
-                  
-                    
-                
 
-                success: function (data) {
-                   d=JSON.parse(data);
-
-                   if(d.error==false)
-                   {
-                    swal('Success',data,'success');  
-                    document.getElementById("sub").disabled = false;
-                    document.getElementById("captainid").style.color='green';
-                  }
-                    else
-                    {
-                      document.getElementById("sub").disabled = true;
-                      document.getElementById("captainid").style.color='red';
-                    }
-                    $("#captainid").html(d.msg);
-                }
-    });
-          }*/
-
+  </script>
+  <script >
+    function removeDept(eventName)
+    {
+      if(eventName.indexOf("GIRLS")!=-1){
+        document.getElementById("dept1").style.display="none";
+        document.getElementById("Dept").required=false;
+      }
+      else
+      {
+         document.getElementById("dept1").style.display="block";
+        document.getElementById("Dept").required=true;
+      }
+    }
   </script>
        
     </head>
     <body>
-        <section class="visual color7"  style="height:100px;width:100%;">
+        <section class="visual color7"  id="page-header">
             <div class="container">
                 <div class="text-block">
                     <div class="heading-holder">
@@ -106,9 +87,7 @@
 
         <section class="section">
         <div class="container">
-<div class="panel panel-default">
 
-    <div class="panel-body">
     <center><h2><span><b>Add Captain</b></span></h2></center>
     <hr>
 @if (session('alert'))
@@ -125,8 +104,27 @@
         <div class="well">
         <form method="POST" action="{{ url('/submit') }}">
         {{ csrf_field() }}
-                <br>
+                
+           <br>
                 <div class="row">
+              <div class="col-md-1"></div>
+              <div class="col-md-3">
+                <label for="Event" class="control-label">Select Event</label>
+              </div>
+                <div class="col-md-6">
+                    <select class="form-control" id="Event" name="Event" onchange="removeDept(this.value);" required>
+                        <option value="">Chooose One</option>
+                        @foreach ($event_name_arr as $e)
+                        <option  value="{!! $e !!}">{!! $e !!}</option>
+                          @endforeach
+                    </select>
+
+                </div>
+         
+
+          </div>
+          <br>
+                <div class="row" id="dept1">
               <div class="col-md-1"></div>
               <div class="col-md-3">
                 <label for="Department" class="control-label">Select Department</label>
@@ -137,24 +135,6 @@
                         @foreach ($dept as $d) 
                               <option  value="{!! $d->Did !!}">{!! $d->Branch !!}</option>
                         @endforeach
-                    </select>
-
-                </div>
-         
-
-          </div>
-           <br>
-                <div class="row">
-              <div class="col-md-1"></div>
-              <div class="col-md-3">
-                <label for="Event" class="control-label">Select Event</label>
-              </div>
-                <div class="col-md-6">
-                    <select class="form-control" id="Event" name="Event" required="">
-                        <option value="">Chooose One</option>
-                        @foreach ($event_name_arr as $e)
-                        <option  value="{!! $e !!}">{!! $e !!}</option>
-                          @endforeach
                     </select>
 
                 </div>
@@ -187,8 +167,7 @@
 
             </div>
              </div>
-  </div>
-</div>
+
         </section>
 
         <section class="section c1">

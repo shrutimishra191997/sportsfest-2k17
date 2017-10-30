@@ -39,21 +39,32 @@
                     <table class="table">
                         <thead>
                             <tr>
+                                <th>Sno</th>
                                 <th>Event name</th>
                                 <th>Team Name</th>
                                 <th>Captain Name</th>
+                                <th>Members</th>
                                 <th>Department</th>
                                 <th>Contact No</th>
+                                <th>Team Status</th>
                             </tr>
                         </thead>
                         <tbody>
+                        <?php $i=0;?>
                             @foreach($det as $details)
                             <tr>
+                            <td>{{++$i}}</td>
                                 <td>{{$details->event_name}}</td>
                                 <td>{{$details->Team_Name}}</td>
                                 <td>{{$details->Name}}({{$details->Captain_Lib_Id}})</td>
+                                @if(isset($members[$i-1]))
+                                <td>{{$members[$i-1]}}</td>
+                                @else
+                                <td></td>
+                                @endif
                                 <td>{{$details->Branch}}</td>
                                 <td>{{$details->MOB}}</td>
+                                <td>{{$details->Status}}</td>
                             </tr>
                             @endforeach
                         </tbody>

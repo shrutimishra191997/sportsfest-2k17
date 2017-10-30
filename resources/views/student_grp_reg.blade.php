@@ -68,10 +68,11 @@
           <div class="well">
             <br>
             <div class="row"> 
-
-           <div >
-           
-              <div class="alert alert-warning" id="alert"> <center id="alertmsg" >Kindly enter library id for team members </center></div>
+            
+           <div class="col-md-12">
+           <center>
+              <div class="alert alert-info" id="alert"><strong id="alertmsg"> Kindly enter library id for team members </strong></div>
+              </center>
             </div>
             </div>
             <br>
@@ -150,10 +151,11 @@
               <input type="hidden" id="event_id" name="event_id" value="{!! $event_details[0]->Sub_Event_Id !!}">
                <input type="hidden" id="team_id" name="team_id" value="{{$team_details}}" >
                <div class="row">
-               <div class="col-md-3"></div>
+               <div class="col-md-6"></div>
                <div class="col-md-6">
           <button center type="submit" id="team" name="team"  class="btn btn-primary rounded " disabled="">Register</button>
-          </div></div>
+          </div>
+          </div>
           </div>
         </form>
          
@@ -197,7 +199,7 @@ function getName(model,id) {
                 }
     });
               $.ajax({
-        type : 'POST',
+        type : 'GET',
         url : '../groupRegistration',
         data : $('form[name="reg"]').serializeArray(),
 
@@ -210,15 +212,15 @@ function getName(model,id) {
         },*/
         success: function(data){
           d=JSON.parse(data);
-           console.log(d);
+          // console.log(d);
           if(d.error==true){
             document.getElementById("alert").className = "alert-warning";
-            $("#alertmsg").html(d.msg);
+            $("#alertmsg").text(d.msg);
 
           }
           else{
             document.getElementById("alert").className = "alert-success";
-            $("#alertmsg").html(d.msg);
+            $("#alertmsg").text(d.msg);
 
           }
           document.getElementById("team").disabled=d.error;

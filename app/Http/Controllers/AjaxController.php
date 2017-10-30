@@ -17,6 +17,7 @@ class AjaxController extends Controller
 			$hash1=Auth::user()->email;
         	$prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',$hash1)->orWhere('Lib_Card_No',$hash1)->select('SEX','Branch_id','Lib_Card_No')->get();
 	 		
+	 		//echo json_encode($prim_detail);
 	 		$lib=strtoupper($_GET['lib']);
 	 		if($lib==$prim_detail[0]->Lib_Card_No){
 	 			echo json_encode(array('error'=>true,'msg'=>"Captain Id not allowed"));
@@ -25,23 +26,22 @@ class AjaxController extends Controller
 	 		
 	 		$sub_event_id=$_GET['sub_event_id'];
 
-	 		//echo json_encode(array('error'=>true,'msg'=>"INVALID Lib_Id"));
-	 		//return;
 	        $name = DB::table('studentprimdetail')->where('Lib_Card_No', $lib)->get();
 	        $event_details=DB::table('subevents')->where("Sub_Event_Id",$sub_event_id)->select('Gender','TeamSizeMin','TeamSizeMax')->get();
+		$qeve_id=DB::table('subevents')->where('Sub_Event_Id',$sub_event_id)->select('Event_Id')->get();
 
 
 	        if(count($name)>0){
 
 	        	//echo json_encode($name);
-	        	if($prim_detail[0]->Branch_id!=$name[0]->Branch_id){
+	        	if($prim_detail[0]->Branch_id!=$name[0]->Branch_id && $name[0]->Sem_id!='21' && $prim_detail[0]->SEX=="MALE"){
 	        		echo json_encode(array('error'=>true,'msg'=>"Same branch allowed"));
 		            return;
 	        	}
-	        	if($name[0]->Sem_id=="21"){
+	        	/*if($name[0]->Sem_id=="21"){
 	        		echo json_encode(array('error'=>true,'msg'=>"Applied Science not allowed"));
 		            return;
-	        	}
+	        	}*/
 	        	 if($event_details[0]->TeamSizeMin==2 && $event_details[0]->TeamSizeMax==2 && $event_details[0]->Gender=='N/A'){
 		            if($prim_detail[0]->SEX=="MALE"){
 		                $mem_dets=DB::table('studentprimdetail')->where('Lib_Card_No',$lib)->get();
@@ -78,9 +78,12 @@ class AjaxController extends Controller
 	        	$check2=DB::table('ind_reg')->select('Sub_Event_Id')->where('Lib_Id','LIKE','%'.$lib.'%')->get();
         		$eve_id=array();
 	            foreach($check2 as $ch){
-	                $eve=DB::table('subevents')->where('Sub_Event_Id',$ch->Sub_Event_Id)->select('Event_Id')->get();
+	                $eve=DB::table('subevents')->where('Sub_Event_Id',$ch->Sub_Event_Id)->where('Event_Id','!=',$qeve_id[0]->Event_Id)->select('Event_Id')->get();
+	                
+	                if(count($eve)>0){
 	                if(!in_array($eve[0]->Event_Id, $eve_id)){
 	                    array_push($eve_id,$eve[0]->Event_Id);
+	                }
 	                }
 	            }
 	            //echo json_encode($check1);

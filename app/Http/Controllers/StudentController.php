@@ -16,6 +16,42 @@ class StudentController extends Controller
 // {
 //     $this->middleware('auth');
 // }
+	
+public function paid_rep(){
+	if(!Auth::guest()){
+	if(Auth::user()->Hash3=="core"){
+		
+		$q=DB::table("paid_event_reg_details")->get();
+		//echo json_encode($q);
+		return view('paid_report_core')->with('data',$q);
+	}
+	else{
+	return Redirect('/');
+	}
+	}
+	else{
+	return Redirect('/');
+	}
+
+}
+
+public function grp_rep(){
+	if(!Auth::guest()){
+	if(Auth::user()->Hash3=="core"){
+		
+		$q=DB::table("group_event_reg_details")->get();
+		//echo json_encode($q);
+		return view('grp_summary_report')->with('data',$q);
+	}
+	else{
+	return Redirect('/');
+	}
+	}
+	else{
+	return Redirect('/');
+	}
+
+}
 
     public function redirect(){
              $client = new Client();
@@ -40,9 +76,9 @@ echo $response->getStatusCode();
     }
 
     public function dash()
-    {
+    {      
     	if(!Auth::guest()){
-
+              return view('message')->with('error',false)->with('message'," <br> REGISTRATIONS ARE CLOSED <br> :( <br>");
         	$hash1=Auth::user()->email;
         	$prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',$hash1)->orWhere('Lib_Card_No',$hash1)->get();
         	//echo json_encode($prim_detail[0]->SEX);
@@ -52,8 +88,7 @@ echo $response->getStatusCode();
         	array_push($gender,$prim_detail[0]->SEX);
         	array_push($gender,"N/A");
 
-        	 $ind_sub_events=DB::table('subevents')->whereIn('Gender',$gender)->where('TeamSizeMin','=',DB::raw('TeamSizeMax'))->get();
-
+        	$ind_sub_events=DB::table('subevents')->whereIn('Gender',$gender)->where('TeamSizeMin','=',DB::raw('TeamSizeMax'))->get();
             foreach ($ind_sub_events as $in) {
                 $q_ch=DB::table('ind_reg')->where('Sub_Event_Id',$in->Sub_Event_Id)->where('Lib_Id','LIKE','%'.$prim_detail[0]->Lib_Card_No.'%')->get();
                 //echo count(explode(',',$q_ch[0]->Lib_Id));
@@ -85,37 +120,45 @@ echo $response->getStatusCode();
         }
 
         $hash1=Auth::user()->email;
-       // echo $input['sub_id'];
         $prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',$hash1)->orWhere('Lib_Card_No',$hash1)->get();
 
         $lib=$prim_detail[0]->Lib_Card_No;
+        
+        $qeve_id=DB::table('subevents')->where('Sub_Event_Id',$input['sub_id'])->select('Event_Id')->get();
+       // echo json_encode($eve_id);
+        $che=DB::table('ind_reg')->where('Lib_Id','like','%'.$prim_detail[0]->Lib_Card_No.'%')->where('Sub_Event_Id',$input['sub_id'])->get();
+        
+        if(count($che)!=0){
+            return view('message')->with('message','You are already registered')->with('error',true);
+        }
+
         $check=DB::table('ind_reg')->where('Lib_Id','like','%'.$lib.'%')->get();
 
         $eve_id=array();
         foreach($check as $ch){
-                $eve=DB::table('subevents')->where('Sub_Event_Id',$ch->Sub_Event_Id)->select('Event_Id')->get();
-                // echo json_encode($eve);
+                $eve=DB::table('subevents')->where('Sub_Event_Id',$ch->Sub_Event_Id)->where('Event_Id','!=',$qeve_id[0]->Event_Id)->select('Event_Id')->get();
+                //echo json_encode($eve);
+                if(count($eve)>0){
                 if(!in_array($eve[0]->Event_Id, $eve_id)){
                     array_push($eve_id,$eve[0]->Event_Id);
+                }
                 }
         }
 
         if(count($eve_id)>=2){
               return view('message')->with('message','You are already registered in 2 individual events')->with('error',true); 
-            //Session::flash('message', 'member registered in 2 events');
-           // return redirect()->back();
         }
 
         else{
-            $q=DB::table('ind_reg')->where("Lib_Id",'LIKE','%'.$lib.'%')->where('Sub_Event_Id',$input['sub_id'])->get();
+            /*$q=DB::table('ind_reg')->where("Lib_Id",'LIKE','%'.$lib.'%')->where('Sub_Event_Id',$input['sub_id'])->get();
             if(count($q)==0){
                 DB::table('ind_reg')->insert(['Lib_Id'=>$lib,'Sub_Event_Id'=>$input['sub_id'],'Paid_Status'=>'N']);
-            }
+            }*/
             $event_details=DB::table('subevents')->where('Sub_Event_Id',$input['sub_id'])->get();
             if($event_details[0]->TeamSizeMax==1){
 
+                DB::table('ind_reg')->insert(['Lib_Id'=>$lib,'Sub_Event_Id'=>$input['sub_id'],'Paid_Status'=>'N','Team_Name'=>"N/A"]);
                 $participant=DB::table('ind_reg')->where("Lib_Id",'LIKE','%'.$lib.'%')->where('Sub_Event_Id',$input['sub_id'])->get();
-                DB::table('ind_reg')->where('Lib_Id',$prim_detail[0]->Lib_Card_No)->where('Sub_Event_Id',$input['sub_id'])->update(['Add_Status'=>'Y']);
                 $arr_lib=explode(',', $participant[0]->Lib_Id);
                 
                 $part_details=array();
@@ -132,7 +175,7 @@ echo $response->getStatusCode();
             }
             else{
         	    $team_details=DB::table('ind_reg')->where("Lib_Id",'LIKE','%'.$lib.'%')->where('Sub_Event_Id',$input['sub_id'])->get();
-                return view('student_ind_reg')->with('event_details',$event_details)->with('captain_name',$prim_detail[0]->Name)->with('captain_lib',$lib)->with('team_details',$team_details);
+                return view('student_ind_reg')->with('event_details',$event_details)->with('captain_name',$prim_detail[0]->Name)->with('captain_lib',$lib);
             }
         }
     }
@@ -170,17 +213,22 @@ echo $response->getStatusCode();
            return view('message')->with('message','Team Name already exists')->with('error',true);
         }
 
-        $check1=DB::table('ind_reg')->select('Lib_Id','Sub_Event_Id')->where('Reg_Id',$input['team_id'])->get();
-        $lib_ar=explode(',',$check1[0]->Lib_Id);
-
         $hash1=Auth::user()->email;
         $prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',$hash1)->orWhere('Lib_Card_No',$hash1)->get();
+        
+        $che=DB::table('ind_reg')->where('Lib_Id','like','%'.$prim_detail[0]->Lib_Card_No.'%')->where('Sub_Event_Id',$input['sub_event_id'])->get();
+        if(count($che)!=0){
+            return view('message')->with('message','Team Already registered')->with('error',true);
+        }
+        $lib_ar=array();
+        array_push($lib_ar,$prim_detail[0]->Lib_Card_No);
 
         $lib=$prim_detail[0]->Lib_Card_No;
+        $qeve_id=DB::table('subevents')->where('Sub_Event_Id',$input['sub_event_id'])->select('Event_Id')->get();
+
         
-        $det=DB::table('subevents')->select('TeamSizeMin','TeamSizeMax','Gender')->where('Sub_Event_Id',$check1[0]->Sub_Event_Id)->get();
+        $det=DB::table('subevents')->select('TeamSizeMin','TeamSizeMax','Gender')->where('Sub_Event_Id',$input['sub_event_id'])->get();
         if(count($lib_ar)>=$det[0]->TeamSizeMin){
-            // Session::flash('message', 'Team Already registered');
              return view('message')->with('message','Team Already registered')->with('error',true);
         }
 
@@ -214,100 +262,92 @@ echo $response->getStatusCode();
             }
             $check2=DB::table('ind_reg')->where('Lib_Id','like','%'.$li.'%')->select('Sub_Event_Id')->get();
             $mem_det=DB::table('studentprimdetail')->select('SEX','Sem_id','Branch_id')->where('Lib_Card_No',$li)->get();
-            
             if($det[0]->Gender!='N/A'){
-                if($mem_dets[0]->SEX!=$prim_detail[0]->SEX){
+                if($mem_det[0]->SEX!=$prim_detail[0]->SEX){
                      return view('message')->with('message','SAME GENDER ALLOWED')->with('error',true);
                 }
             }
             if(count($mem_det)==0){
-                // Session::flash('message','Lib_Id not exists');
+               
                  return view('message')->with('message','Lib_Id not exists');
             }
 
-            if($mem_det[0]->Branch_id!=$prim_detail[0]->Branch_id || $mem_det[0]=='21'){
-               // Session::flash('message','only members of same branch are allowed');
+            if($mem_det[0]->Branch_id!=$prim_detail[0]->Branch_id && $mem_det[0]->Sem_id!='21' && $prim_detail[0]->SEX=="MALE"){
                 return view('message')->with('message','only members of same branch are allowed')->with('error',true);
             }
             
             $eve_id=array();
             foreach($check2 as $ch){
-                $eve=DB::table('subevents')->where('Sub_Event_Id',$ch->Sub_Event_Id)->select('Event_Id')->get();
-                if(!in_array($eve[0]->Event_Id, $eve_id)){
-                    array_push($eve_id,$eve[0]->Event_Id);
+                $eve=DB::table('subevents')->where('Sub_Event_Id',$ch->Sub_Event_Id)->where('Event_Id','!=',$qeve_id[0]->Event_Id)->select('Event_Id')->get();
+                if(count($eve)>0){
+                	if(!in_array($eve[0]->Event_Id, $eve_id)){
+		                    array_push($eve_id,$eve[0]->Event_Id);
+               		 }
                 }
             }
             if(count($eve_id)>=2){
-               // Session::flash('message', 'member registered in 2 events');
                 return view('message')->with('message','member registered in 2 events')->with('error',true);
-                //return redirect()->back();
             }
 
-            $check3=DB::table('ind_reg')->where('Lib_Id','like','%'.$li.'%')->where('Sub_Event_Id',$check1[0]->Sub_Event_Id)->get();
-            //echo json_encode($check3);
+            $check3=DB::table('ind_reg')->where('Lib_Id','like','%'.$li.'%')->where('Sub_Event_Id',$input['sub_event_id'])->get();
             if(count($check3)>0){
-                // Session::flash('message', 'member already registered');
                  return view('message')->with('message','member already registered')->with('error',true);
-                  //return redirect()->back();
             }
             if(count(array_keys($lib_ar,$li))>0){
-                //Session::flash('message', 'Duplicate entries');
                 return view('message')->with('message','Duplicate entries')->with('error',true);
-                 //return redirect()->back();
             }
             array_push($lib_ar,strtoupper($li));
         }
          if(count($lib_ar)<$det[0]->TeamSizeMin || count($lib_ar)>$det[0]->TeamSizeMax){
-           // Session::flash('message', 'Insufficient Team members');
             return view('message')->with('message','Insufficient Team members')->with('error',true);
-             //return redirect()->back();
-         }
+        }
          else{
-            DB::table('ind_reg')->where('Reg_Id',$input['team_id'])->update(['Lib_Id'=>implode(',', $lib_ar),'Add_Status'=>'Y','Team_Name'=>$team_name]);
-            $event_details=DB::table('subevents')->where('Sub_Event_Id',$check1[0]->Sub_Event_Id)->get();
+            DB::table("ind_reg")->insert(['Lib_Id'=>implode(',', $lib_ar),'Team_Name'=>$team_name,'Sub_Event_Id'=>$input['sub_event_id'],'Paid_Status'=>'N']);
+            //DB::table('ind_reg')->where('Reg_Id',$input['team_id'])->update(['Lib_Id'=>implode(',', $lib_ar),'Team_Name'=>$team_name]);
+            $event_details=DB::table('subevents')->where('Sub_Event_Id',$input['sub_event_id'])->get();
             
             $part_details=array();
             $i=0;
              foreach ($lib_ar as $lib) {
                 $q_name=DB::table('studentprimdetail')->select('Lib_Card_No','Name')->where('Lib_Card_No',$lib)->get();
-                //echo json_encode($q_name[0]);
                 array_push($part_details, array('Name'=>$q_name[0]->Name,'lib'=>$q_name[0]->Lib_Card_No));
-                //$i++;
             }
-           // echo json_encode($event_details);
             $amount=$event_details[0]->Amount*count($lib_ar);
-            //echo json_encode($part_details[0]['Name']);
 
             return view('payment')->with('event_details',$event_details)->with('participant',$part_details)->with('amount',$amount);
 
          }
 
-         //return view('welcome');
-
-        //echo json_encode($lib_ids);
     }
 
-    public function my_events(Request $request){
-      //  $hash1='1519IT1124';
+    public function my_events(){
+       // $hash1='1519IT1124';
         if(Auth::guest()){
             return Redirect('/');
         }
-        $response=$request->all();
         $hash1=Auth::user()->email;
         $prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',$hash1)->orWhere('Lib_Card_No',$hash1)->get();
 
         $hash1=$prim_detail[0]->Lib_Card_No;
+        //$hash1="1418BPH1046";
         
-         $individual=DB::table('ind_reg')->where('Lib_Id','like','%'.$hash1.'%')->get();
+        $individual=DB::table('ind_reg')->where('Lib_Id','like','%'.$hash1.'%')->join('subevents','subevents.sub_event_id','=','ind_reg.sub_event_id')->get();
         //echo json_encode($individual);
         $captain=DB::table('grp_reg')->where('Captain_Lib_Id',$hash1)->first();
-        $member=DB::table('members')->join('grp_reg','grp_reg.Team_Id','=','members.Team_Id')->select('grp_reg.Sub_Event_Id','grp_reg.Team_Name')->where('members.Member_Lib_Id',$hash1)->get();
+        //echo json_encode($captain);
+        
+        $member=DB::table('members')->join('grp_reg','grp_reg.Team_Id','=','members.Team_Id')->select('grp_reg.Sub_Event_Id','grp_reg.Team_Name','members.Team_Id')->where('members.Member_Lib_Id',$hash1)->get();
+       // echo json_encode($member);
         $i=-1;
+        $response=array();
+        
         foreach ($individual as $indi) {
             $i++;
             $event=DB::table('subevents')->where('Sub_Event_Id',$indi->Sub_Event_Id)->first();
             $response[$i]['event_Name']=$event->Name;
             $response[$i]['sub_event_id']=$indi->Sub_Event_Id;
+            $response[$i]['amount']=$indi->Amount*$indi->TeamSizeMin;
+            $response[$i]['members']=$indi->Lib_Id;
             if($indi->Paid_Status=='Y')
                 $response[$i]['status']='PAID';
             else
@@ -317,27 +357,50 @@ echo $response->getStatusCode();
         }
 
         if(count($captain)>0){
+        $mem_det=DB::table('members')->where('Team_Id',$captain->Team_Id)->get();
+        
             $i++;
             if(($captain->Team_Name!=''||$captain->Team_Name!=NULL)){
+            
                  $event=DB::table('subevents')->where('Sub_Event_Id',$captain->Sub_Event_Id)->first();
                 $response[$i]['event_Name']=$event->Name;
                 $response[$i]['status']='PAID';
+                $response[$i]['amount']=0;
+                 $response[$i]['members']=$captain->Captain_Lib_Id;
                 $response[$i]['team_name']=$captain->Team_Name;
+                
+                foreach($mem_det as $m){
+                $name=DB::table('studentprimdetail')->where('Lib_Card_No',$m->Member_Lib_Id)->first();
+                
+                	 $response[$i]['members']=$response[$i]['members'].",".$name->Name."(".$m->Member_Lib_Id.")";
+                }
             }
             else{
                  $event=DB::table('subevents')->where('Sub_Event_Id',$captain->Sub_Event_Id)->first();
                 $response[$i]['event_Name']=$event->Name;
-                $response[$i]['status']='UNPAID';
+                $response[$i]['status']='PAID';
+                $response[$i]['amount']=0;
+                $response[$i]['members']=$captain->Captain_Lib_Id;
                 $response[$i]['team_name']='---';
             }
         }
-
         foreach ($member as $mem) {
             $i++;
             $event=DB::table('subevents')->where('Sub_Event_Id',$mem->Sub_Event_Id)->first();
             $response[$i]['event_Name']=$event->Name;
             $response[$i]['status']='PAID';
+            $response[$i]['amount']=0;
             $response[$i]['team_name']=$mem->Team_Name;
+            
+            //echo json_encode($mem);
+            $e=DB::table('grp_reg')->where('Team_Id',$mem->Team_Id)->first();
+             $response[$i]['members']=$e->Captain_Lib_Id;
+            $r=DB::table('members')->where('Team_Id',$mem->Team_Id)->get();
+            
+            foreach($r as $w){
+           // echo json_encode($w);
+            	 $response[$i]['members']=$response[$i]['members'].",".$w->Member_Lib_Id;
+            }
             
         }        // echo json_encode($response);         die();
 
@@ -369,6 +432,7 @@ echo $response->getStatusCode();
                 $lib_arr=explode(',', $q_team[0]->Lib_Id);
                 //echo json_encode($lib_arr);
                 $amount=$event_details[0]->Amount*count($lib_arr);
+                $amount=floor($amount-((1.7*$amount)/100));
 
                Db::table('order_details')->insert(['Reg_Id'=>$q_team[0]->Reg_Id,'User_Id'=>$lib,'Amount'=>$amount]);
                $order_details=DB::table('order_details')->select('Id','Order_Id')->where('Reg_Id',$q_team[0]->Reg_Id)->where('User_Id',$lib)->where('Status','PENDING')->orderBy('Id','desc')->limit(1)->get();
@@ -381,19 +445,196 @@ echo $response->getStatusCode();
                    $order_id="ORDER".$order_details[0]->Id;
                     DB::table('order_details')->where('Id',$order_details[0]->Id)->update(['Order_Id'=>$order_id]);
                    // return view('paytm')->with('order_details',$order_details)->with('order_id',$order_id)->with('amount',$amount);
-                    return view('pgRedirect')->with('ORDER_ID',$order_id)->with('CUST_ID','PRA'.Auth::user()->email)->with('INDUSTRY_TYPE_ID','PrivateEducation')->with('CHANNEL_ID','WEB')->with('TXN_AMOUNT',$amount)->with('config_url','http://localhst:8000/lib/config_paytm.php')->with('encdec_url','http://localhost:8000/lib/encdec_paytm.php');
+                    return view('pgRedirect')->with('ORDER_ID',$order_id)->with('CUST_ID','PRA'.Auth::user()->email)->with('INDUSTRY_TYPE_ID','PrivateEducation')->with('CHANNEL_ID','WEB')->with('TXN_AMOUNT',$amount)->with('config_url','http://www.sportsfest-kiet.com/lib/config_paytm.php')->with('encdec_url','http://www.sportsfest-kiet.com/lib/encdec_paytm.php');
                }
             }
         }
     }
-    public function complete(Request $request){
+    
+    
+    public function repayment(Request $request){
+        if(Auth::guest()){
+           // echo "guest";
+           return Redirect('/');
+        }
+        else{
+            $input=$request->all();
+            $sub_event_id=$input['sub_id'];
+            $prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',Auth::user()->email)->orWhere('Lib_Card_No',Auth::user()->email)->get();
 
+            $lib=$prim_detail[0]->Lib_Card_No;
+        
+            $event_details=DB::table('subevents')->where('Sub_Event_Id',$sub_event_id)->get();
+            $q_team=DB::table('ind_reg')->where('Sub_Event_Id',$sub_event_id)->where('Lib_Id','Like','%'.$lib.'%')->where('Paid_Status','N')->get();
+            //echo json_encode($q_team);
+            if(count($q_team)==0){
+                //echo "00000000000";
+                 return view('message')->with('message','Already Paid')->with('error',true);
+               // return Redirect('/');
+            }
+            else{
+            	
+            	$qw=DB::table('order_details')->where('Reg_Id',$q_team[0]->Reg_Id)->orderBy('Id','desc')->first();
+            	//echo json_encode($qw);
+            	if(count($qw)>0){
+            	
+            	 $a="https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS?JsonData={'MID':'KriIns08204252501061','ORDERID':'".$qw->Order_Id."'}";
+		            $contents = file_get_contents($a); 
+		            $contents=json_decode($contents,true);
+		            
+		            
+		            if($contents["TXNAMOUNT"]>=$qw->Amount && $contents['STATUS']=="TXN_SUCCESS" )
+		            {   
+	                       DB::table('order_details')->where('Order_Id',$qw->Order_Id)->update(['Status'=>'PAID']);
+	                       $q_or=DB::table('order_details')->where('Order_Id',$qw->Order_Id)->select('Reg_Id')->get();
+	                       DB::table('ind_reg')->where('Reg_Id',$q_or[0]->Reg_Id)->update(['Paid_Status'=>'Y']);
+	                      return view('message')->with('message','Already Paid')->with('error',false);
+	                      
+	                     }
+	          }
+            	
+                $lib_arr=explode(',', $q_team[0]->Lib_Id);
+                //echo json_encode($lib_arr);
+                $amount=$event_details[0]->Amount*count($lib_arr);
+                $amount=floor($amount-((1.7*$amount)/100));
+
+               Db::table('order_details')->insert(['Reg_Id'=>$q_team[0]->Reg_Id,'User_Id'=>$lib,'Amount'=>$amount]);
+               $order_details=DB::table('order_details')->select('Id','Order_Id')->where('Reg_Id',$q_team[0]->Reg_Id)->where('User_Id',$lib)->where('Status','PENDING')->orderBy('Id','desc')->limit(1)->get();
+             //  echo json_encode($order_details);
+               if($order_details[0]->Order_Id!=NULL){
+                // return Redirect('/error');
+                  return view('message')->with('message','Error generating order...')->with('error',true);
+               }
+               else{
+               
+               		
+                   $order_id="ORDER".$order_details[0]->Id;
+                    DB::table('order_details')->where('Id',$order_details[0]->Id)->update(['Order_Id'=>$order_id]);
+                   // return view('paytm')->with('order_details',$order_details)->with('order_id',$order_id)->with('amount',$amount);
+                    return view('pgRedirect')->with('ORDER_ID',$order_id)->with('CUST_ID','PRA'.Auth::user()->email)->with('INDUSTRY_TYPE_ID','PrivateEducation')->with('CHANNEL_ID','WEB')->with('TXN_AMOUNT',$amount)->with('config_url','http://www.sportsfest-kiet.com/lib/config_paytm.php')->with('encdec_url','http://www.sportsfest-kiet.com/lib/encdec_paytm.php');
+               }
+            }
+        }
     }
+    
+    
+    public function complete(Request $request)
+    {
+        if(Auth::guest()) {
+            return Redirect('/');
+        }
+        else{
 
+            $prim_detail=DB::table('studentprimdetail')->where('Uni_Roll_No',Auth::user()->email)->orWhere('Lib_Card_No',Auth::user()->email)->get();
+		// echo json_encode($prim_detail);
+            $lib=$prim_detail[0]->Lib_Card_No;
+        
+            header("Pragma: no-cache");
+            header("Cache-Control: no-cache");
+            header("Expires: 0");
+           // $user=Auth::user()->id;
+            require_once("lib/config_paytm.php");
+            require_once("lib/encdec_paytm.php");
+            $paytmChecksum = "";
+            $paramList = array();
+            $isValidChecksum = "FALSE";
+            
+            if(!isset($_POST)){
+            	return view('message')->with('message','error')->with('error',false);
+            }
+            $paramList = $_POST;
+           // echo $paramList['ORDERID']." ".$lib;
+            $q_order=DB::table('order_details')->where('Order_Id',$paramList['ORDERID'])->where('User_Id',$lib)->get();
+            //var_dump($q_order[0]->Amount);
+           // echo json_encode($q_order);
+            $paytmChecksum = isset($_POST["CHECKSUMHASH"]) ? $_POST["CHECKSUMHASH"] : ""; //Sent by Paytm pg
+            $isValidChecksum = verifychecksum_e($paramList, PAYTM_MERCHANT_KEY, $paytmChecksum); //will return TRUE or FALSE string.
+            if($isValidChecksum == "TRUE") {
+                if ($_POST["STATUS"] == "TXN_SUCCESS") {
+                    if($_POST['TXNAMOUNT']>=$q_order[0]->Amount){
+                    
+                    
+                    	 $a="https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS?JsonData={'MID':'KriIns08204252501061','ORDERID':'".$paramList['ORDERID']."'}";
+		            $contents = file_get_contents($a); 
+		            $contents=json_decode($contents,true);
+		            
+		            
+		            if($contents["TXNAMOUNT"]>=$q_order[0]->Amount && $contents['STATUS']=="TXN_SUCCESS" )
+		            {   
+	                       DB::table('order_details')->where('Order_Id',$q_order[0]->Order_Id)->update(['Status'=>'PAID']);
+	                       $q_or=DB::table('order_details')->where('Order_Id',$q_order[0]->Order_Id)->select('Reg_Id')->get();
+	                       DB::table('ind_reg')->where('Reg_Id',$q_or[0]->Reg_Id)->update(['Paid_Status'=>'Y']);
+	                      return view('message')->with('message','Payment Successful')->with('error',false);
+	                      
+	                     }
+	                     else{
+	                     	return view('message')->with('message','Error4')->with('error',false);
+	                     }
+                    }
+                    else{
+                        return view('message')->with('message','Error1')->with('error',false);
+                    }
+                }
+                else{
+                    return view('message')->with('message','Error2')->with('error',false);
+                }
+            }
+            else{
+                return view('message')->with('message','Error3')->with('error',false);
+            }
+            
+        }
+    }
+ 
+ 
+ 
     public function contact_us(Request $request){
         return view('contact');
     }
 
+public function check(){
+	
+	$de=DB::table('order_details')->where('Status','PENDING')->where('Id','>',800)->where('User_Id','!=','1519CS1145')->get();
+	$i=0;
+	$amount=0;
+	$j=0;
+	foreach($de as $d){
+	//echo json_encode($d->User_Id);
+		 $a="https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS?JsonData={'MID':'KriIns08204252501061','ORDERID':'".$d->Order_Id."'}";
+	            $contents = file_get_contents($a); 
+	            $contents=json_decode($contents,true);
+	            
+	            
+	            if($contents['STATUS']=="TXN_SUCCESS" && $contents['TXNAMOUNT']>10 && $contents['TXNAMOUNT']>=$d->Amount){
+	            $i++;
+	            $q2=DB::table('order_details')->where('Reg_Id',$d->Reg_Id)->where('Status','PAID')->get();
+	            
+	            if(count($q2)>0){
+	            $j++;
+	            echo $d->User_Id."/".$d->Order_Id."?".$contents['TXNAMOUNT']." "; 
+	            $amount+=$contents['TXNAMOUNT'];
+	            continue;
+	            }
+	            	echo $d->User_Id."/".$d->Order_Id."?".$contents['TXNAMOUNT']." t";
+	            	//die();
+	            	//DB::table('order_details')->where('Order_Id',$d->Order_Id)->update(['Status'=>'PAID']);
+	            	//DB::table('ind_reg')->where('Reg_Id',$d->Reg_Id)->update(['Paid_Status'=>'Y']);
+	            	//die();
+	            	
+	            	//$amount+=$contents['TXNAMOUNT'];
+	            	if($i>25){
+	            	echo $i;
+	            	echo " ".$amount;
+	            	die();
+	            	}
+	            }
+	            //echo json_encode($contents);
+	}
+	
+	echo $i." ".$j." ";
+	            	echo " ".$amount;
+	
+}
      public function confirm_payment(){
 
         if(Auth::guest()){
@@ -402,17 +643,66 @@ echo $response->getStatusCode();
             $prim_detail=DB::table('studentprimdetail')->select('Lib_Card_No')->where('Uni_Roll_No',Auth::user()->email)->orWhere('Lib_Card_No',Auth::user()->email)->get();
             $lib=$prim_detail[0]->Lib_Card_No;
 
-            $q_order=DB::table('order_details')->where('User_Id',$lib)->orderBy('Id','desc')->limit(1)->get();
-
-            $a="https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS?JsonData={'MID':'KriIns08204252501061','ORDERID':'".$q_order[0]->Order_Id."'}";
+            $q_order=DB::table('order_details')->where('Status','PAID')->orderBy('Id','desc')->get();
+            $i=0;
+            //echo json_encode($q_order);
+	//foreach($q_order as $q){
+            $a="https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS?JsonData={'MID':'KriIns08204252501061','ORDERID':'ORDER972'}";
             $contents = file_get_contents($a); 
             $contents=json_decode($contents,true);
-            if($contents["TXNAMOUNT"]==$q_order[0]->Amount && $contents["STATUS"]=='TXN_SUCCESS')
+            
+            echo json_encode($contents);
+           /* if($contents["TXNAMOUNT"]>=$q->Amount )
             {   
-                 //echo json_encode($contents);
-                DB::table('order_details')->where('Order_Id',$contents['ORDERID'])->update(['Status'=>'PAID']);
+            	//echo "success";
+            	echo $q->Amount."  ".$contents['TXNAMOUNT']." ";
+            	$i++;
+                //DB::table('order_details')->where('Order_Id',$contents['ORDERID'])->update(['Status'=>'PAID']);
                
             }
+            else{
+            echo "fail";
+            echo $q->Lib_Id;
+            	}*/
+          //  }
+            echo $i;
+    }
+    
+  /*   public function confirm_payment2(){
+
+        if(Auth::guest()){
+            return Redirect('/');
+        }
+            $prim_detail=DB::table('studentprimdetail')->select('Lib_Card_No')->where('Uni_Roll_No',Auth::user()->email)->orWhere('Lib_Card_No',Auth::user()->email)->get();
+            $lib=$prim_detail[0]->Lib_Card_No;
+
+            $q_order=DB::table('order_details')->where('Status','PAID')->orderBy('Id','desc')->get();
+            $i=0;
+            //echo json_encode($q_order);
+	foreach($q_order as $q){
+            $a="https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS?JsonData={'MID':'KriIns08204252501061','ORDERID':'".$q->Order_Id."'}";
+            $contents = file_get_contents($a); 
+            $contents=json_decode($contents,true);
+            
+           // echo json_encode($contents);
+            if($contents["TXNAMOUNT"]>=$q->Amount )
+            {   
+            	//echo "success";
+            	//echo $q->Amount."  ".$contents['TXNAMOUNT']." ";
+            	$i++;
+                //DB::table('order_details')->where('Order_Id',$contents['ORDERID'])->update(['Status'=>'PAID']);
+               
+            }
+            else{
+            echo "fail";
+            echo $q->Lib_Id;
+            	
+            }
+            echo $i;
+    }*/
+
+    public function pg_response(){
+        return view('pgResponse');
     }
 
     public function coming_soon(){
@@ -422,7 +712,14 @@ echo $response->getStatusCode();
          return view('message')->with('message','Coming Soon...')->with('error',false);
     }
 
-      public function not_found(){
+    public function wait(){
+        if(Auth::guest()){
+            return Redirect('/');
+        }
+        return view('message')->with('message','Try later')->with('error',false);
+    }
+
+    public function not_found(){
         if(Auth::guest()){
             return Redirect('/');
         }

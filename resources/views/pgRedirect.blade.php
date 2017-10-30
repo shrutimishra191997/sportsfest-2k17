@@ -4,8 +4,8 @@ header("Cache-Control: no-cache");
 header("Expires: 0");
 
 // following files need to be included
-//require_once($config_url);
-//require_once($encdec_url);
+require_once("lib/config_paytm.php");
+require_once("lib/encdec_paytm.php");
 
 $checkSum = "";
 $paramList = array();
@@ -28,6 +28,9 @@ $paramList["INDUSTRY_TYPE_ID"] = $INDUSTRY_TYPE_ID;
 $paramList["CHANNEL_ID"] = $CHANNEL_ID;
 $paramList["TXN_AMOUNT"] = $TXN_AMOUNT;
 $paramList["WEBSITE"] = PAYTM_MERCHANT_WEBSITE;
+$paramList['CALLBACK_URL']="http://www.sportsfest-kiet.com/complete";
+
+//$paramList['CALLBACK_URL']="http://localhost:8000/PaytmKit/pgResponse.php";
 //$paramList['CALLBACK_URL']="http://localhost:8000/complete";
 
 //echo json_encode($paramList);

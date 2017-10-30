@@ -36,10 +36,16 @@
         <section class="section">
             <div class="container">
                 <div id="form_div2">
+                
                     <table class="table">
                         <thead>
-                            <tr>
-                                
+                        <tr><th>Total: <?php echo count($det);?> </th> 
+                        <th>Total Paid Students : <?php echo $total_paid;?> </th> 
+                        <th>Total Unpaid Students : <?php echo count($det)-$total_paid;?> </th> 
+                        </tr>
+                        
+                            <tr>          
+                            <th>Sno</th>                     
                                 <th>Student Name</th>
                                 <th>Department</th>
                                 <th>Contact No</th>
@@ -47,16 +53,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
-                            @foreach($det as $det)
+                        <?php $i=1;?>
+                            <?php
+                            foreach($det as $det){ ?>
                             <tr>
-                                
-                                <td>{{$det->Name}}({{$det->Lib_Card_No}})</td>
-                                <td>{{$det->Branch}}</td>
-                                <td>{{$det->MOB}}</td>
-                                <td>{{$det->Paid_Status}}</td>
+                                <td><?php echo $i++; ?></td>
+                                <td><?php echo $det['stu_name']?></td>
+                                <td><?php echo $det['Branch']?></td>
+                                <td><?php echo $det['MOB']?></td>
+                                <td><?php echo $det['Paid_Status']?></td>
                             </tr>
-                            @endforeach
+                            <?php }?>
+                            
                         </tbody>
                     </table>
                 </div>

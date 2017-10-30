@@ -88,7 +88,7 @@
                 <label for="Captain" class="control-label"><span style="color: black;">Total amount</span></label>
                 </div>
                 <div class="col-md-4">
-                  <span style="color: red;"><i class="fa fa-inr"></i> {!! $amount !!}</span>
+                  <span style="color: red;"><i class="fa fa-inr"></i> {!! $amount !!} - (1.7% of  <i class="fa fa-inr"></i>{!! $amount !!}) = <i class="fa fa-inr"></i> <?php echo floor($amount-((1.7*$amount)/100))?></span>
                 </div>
                 </div>
                 <br><br>
@@ -106,13 +106,13 @@
                   <div class="col-md-10">
                     <div class="row">
                       <span style="color: red;">
-                        For Payment Through Card : <i class="fa fa-inr"></i> 18.0 + GST as applicable.
+                       <!--  For Payment Through Card : <i class="fa fa-inr"></i> 18.0 + GST as applicable. -->
                       </span>
                     </div>
                     <br>
                     <div class="row">
                       <span style="color: red;">
-                        For Payment Through PayTm : 2% Of Total Amount
+                       <!--  For Payment Through PayTm : 2% Of Total Amount -->
                       </span>
                     </div>
                   </div>

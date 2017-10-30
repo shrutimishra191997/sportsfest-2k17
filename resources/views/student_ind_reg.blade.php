@@ -114,7 +114,7 @@
           <?php $j++; }?>
 
            
-          <div class="row"><br><center><button type="submit" id="team_id" name="team_id" value="{!! $team_details[0]->Reg_Id !!}" class="btn btn-primary rounded">Register</button></center></div>
+          <div class="row"><br><center><button type="submit" id="team_id" name="team_id" class="btn btn-primary rounded">Register</button></center></div>
 
         </form>
          
@@ -145,9 +145,10 @@
                // console.log(e);
             var r=$.ajax({
                 type: 'GET',
-                url: '../getName',
+                url: '../getIndName',
                 data: e,
                 success: function (data) {
+                  console.log(data);
                    d=JSON.parse(data);
                    if(d.error==false){
                     document.getElementById("id"+id).style.color='green';

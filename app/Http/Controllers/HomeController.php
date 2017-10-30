@@ -34,14 +34,29 @@ class HomeController extends Controller
 
 
 
-    public function encrypt(Request $request){
+    public function encrypt(){
         $request=$request->all();
-        $request['email']='1502913112';
+        $request['email']=$request['email'];
         $request['password']=bcrypt($request['password']);
         DB::table('users')->where('email','$request["email"]')->update($request);
-
         return redirect('/');
+        
+       /*
+        $request['email']='1721EN1018';
+        $request['password']=bcrypt('8127944549');
+        echo DB::table('users')->where('email','$request["email"]')->update($request);
+        die();
+        return redirect('/');
+        
+        $request['email']='123';
+        $request['password']=bcrypt("8127944549");
+        $request['Hash3']='Student';
+        $request['remember_token']="";
+        echo DB::table('users')->insert($request);*/
+        return redirect('/');
+
     }
+
 
 
     public function getName()
@@ -66,14 +81,22 @@ class HomeController extends Controller
 
         if(Auth::check()){
              $request=$request->all();
-        $limit='1';
+        $limit='2';
         //team_id,team_name,captain_lib_id,lib_id,event_id
         $f=0;
        
-        $did=DB::table('studentprimdetail')->select('Branch_id','Year','Course_id','SEX')->where('Lib_Card_No',$request['captain_lib_id'])->first();
+        $did=DB::table('studentprimdetail')->select('Branch_id','Year','Course_id','SEX','Sem_id')->where('Lib_Card_No',$request['captain_lib_id'])->first();
          $request['did']=$did->Branch_id;
+  
          
          $year[]=$did->Year;
+
+         if($did->SEX=="FEMALE"){
+         	$group_limit=4;
+
+         }
+         else
+         	$group_limit=2;
          
          $duration=DB::table('course_detail')->where('course_id',$did->Course_id)->first();
          $year_max=$duration->Duration;
@@ -132,30 +155,47 @@ class HomeController extends Controller
 
         }
         else{
+        
         if(DB::table('grp_reg')->where('Captain_Lib_Id',$request['captain_lib_id'])->where('Team_Id',$request['team_id'])->where('Sub_Event_Id',$request['event_id'])->count()!=0){
 
         if(DB::table('grp_reg')->where('Sub_Event_Id',$request['event_id'])->where('Team_Name',$request['team_name'])->count()==0){
 
             foreach ($lib_id as $id) {
-                $details=DB::table('studentprimdetail')->where('Lib_Card_No',$id)->where('Branch_id',$request['did'])->where('Sem_id','!=','21')->first();
+                $details=DB::table('studentprimdetail')->where('Lib_Card_No',$id)->first();
+             
                  
-                   if(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()!=0){
+                   /*if(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()!=0){
 
                     $response['error']=true;
                     $response['msg']='You cannot add team captain as a team member';
                     $f=1;
                     break;
 
-                   }
+                   }*/
+                  
+                 
+                 // B.pharma and M. pharma are considered single depatment (KSOP)
+                 
+                 if($details->Branch_id!=$did->Branch_id &&$did->SEX=="MALE"&&$did->Sem_id!='21'){
+                 if($did->Branch_id=='20' || $did->Branch_id=='13'){
                 
-                if(count($details)==0 && $did->SEX=="MALE"){
+                 } else{
                 
                     $response['error']=true;
                     $response['msg']=$id.' is not of your department. Please enter correct details';
                     $f=1;
                     break;
+                    }
                 }
+                 /*if($details->Sem_id=='21'){
 
+                    $response['error']=true;
+                    $response['msg']="AS department is not allowed";
+                    $f=1;
+                    break;
+                }*/
+               
+               
                 if($details->SEX!=$did->SEX){
 
                     $response['error']=true;
@@ -164,21 +204,30 @@ class HomeController extends Controller
                     break;
                 }
 
-                if(((DB::table('members')->where('Member_Lib_Id',$id)->count())+(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()))>1){
+                if(((DB::table('members')->where('Member_Lib_Id',$id)->count())+(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()))>=$group_limit){
                     $response['error']=true;
                     $response['msg']=$id.' has exceeded the limit of registrations in group events';
                     $f=1;
                     break;
                 }
+                
+               
+                    
                 $year[]=$details->Year;
+              
             }
+          
 
+        
             
             if($f==0){
                 
                 $count=array_count_values($year);
                 
                 for($i=$year_min;$i<=$year_max;$i++){
+                if($did->Sem_id=='21'||$did->SEX!="MALE"){
+                break;
+                }
 
                     if(!isset($count[$i])){
                          $response['error']=true;
@@ -252,10 +301,16 @@ class HomeController extends Controller
         //team_id,team_name,captain_lib_id,lib_id,event_id
         $f=0;
        
-        $did=DB::table('studentprimdetail')->select('Branch_id','Year','Course_id','SEX')->where('Lib_Card_No',$request['captain_lib_id'])->first();
+        $did=DB::table('studentprimdetail')->select('Branch_id','Year','Course_id','SEX','Sem_id')->where('Lib_Card_No',$request['captain_lib_id'])->first();
         
         $request['did']=$did->Branch_id;
         $year[]=$did->Year;
+         if($did->SEX=="FEMALE"){
+         	$group_limit=4;
+
+         }
+         else
+         	$group_limit=2;
 
          $duration=DB::table('course_detail')->where('course_id',$did->Course_id)->first();
          $year_max=$duration->Duration;
@@ -308,23 +363,33 @@ class HomeController extends Controller
         if(DB::table('grp_reg')->where('Sub_Event_Id',$request['event_id'])->where('Team_Name',$request['team_name'])->count()==0){
 
             foreach ($lib_id as $id) {
-                $details=DB::table('studentprimdetail')->where('Lib_Card_No',$id)->where('Branch_id',$request['did'])->where('Sem_id','!=','21')->first();
+                $details=DB::table('studentprimdetail')->where('Lib_Card_No',$id)->first();
                  
-                   if(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()!=0){
+                  /* if(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()!=0){
                     $response['error']=true;
                     $response['msg']='You cannot add team captain as a team member';
                     $f=1;
                     break;
 
-                   }
-                
-                if(count($details)==0){
-                
+                   }*/
+                // B.pharma and M. pharma are considered single depatment (KSOP)
+                if($details->Branch_id!=$did->Branch_id &&$did->SEX=="MALE"&&$did->Sem_id!='21'){
+                if($details->Branch_id!='20' || $details->Branch_id!='13'){}
+                else{
                     $response['error']=true;
                     $response['msg']=$id.' is not of your department. Please enter correct details';
                     $f=1;
                     break;
+                    }
                 }
+                  /*if($details->Sem_id=='21'){
+
+                    $response['error']=true;
+                    $response['msg']="AS department is not allowed";
+                    $f=1;
+                    break;
+                }*/
+                
                 if($details->SEX!=$did->SEX){
 
                     $response['error']=true;
@@ -333,7 +398,7 @@ class HomeController extends Controller
                     break;
                 }
 
-                if(((DB::table('members')->where('Member_Lib_Id',$id)->count())+(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()))>1){
+                if(((DB::table('members')->where('Member_Lib_Id',$id)->count())+(DB::table('grp_reg')->where('Captain_Lib_Id',$id)->count()))>=$group_limit){
                     $response['error']=true;
                     $response['msg']=$id.' has exceeded the limit of registrations in group events';
                     $f=1;
@@ -341,6 +406,7 @@ class HomeController extends Controller
                 }
                 $year[]=$details->Year;
             }
+            
 
             
             if($f==0){
@@ -348,6 +414,11 @@ class HomeController extends Controller
                 $count=array_count_values($year);
                 
                 for($i=$year_min;$i<=$year_max;$i++){
+                    
+                       if($did->Sem_id=='21'||$did->SEX!="MALE"){
+                break;
+                }
+
 
                     if(!isset($count[$i])){
                          $response['error']=true;

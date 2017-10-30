@@ -31,7 +31,7 @@
        
     </head>
     <body>
-        <section id="page-header" class="visual color7">
+        <section class="visual color7" style="height:0%;width:100%;">
             <div class="container">
                 <div class="text-block">
                     <div class="heading-holder">
@@ -64,7 +64,8 @@
                 <thead >
                   <th>S.No</th>
                   <th>Team Name</th>
-                  <th>Events</th>
+                  <th>Members</th>
+                  <th>Events</th>+
                   <th>Status</th>
                 </thead>
 
@@ -74,15 +75,17 @@
                 <tr>
                   <td><?php echo $i++;?></td>
                   <td><?php echo $res['team_name'];?></td>
+                  <td><?php echo $res['members'];?></td>
                   <td><?php echo $res['event_Name'];?></td>
                   <?php if($res['status']=='PAID'){?>
                   <td><?php echo $res['status'];?></td>
                   <?php }
                   else{?>
-                   <td><form action="{{ action('StudentController@pay_amount') }}" method="post">
+                   <td>
+                    <form action="{{ action('StudentController@repayment') }}" method="post">
                    {{ csrf_field() }}
                    <button type="submit" class="btn btn-success rounded" data-toggle="collapse" data-target="#payment_div" name="sub_id" value="<?php echo $res['sub_event_id'];?>">Pay</button>
-                 </form></td>
+                 </form><span style="color:red"><i class="fa fa-inr"></i> <?php echo $res['amount'];?> - (1.7% of <i class="fa fa-inr"></i> <?php echo $res['amount'];?>) = <i class="fa fa-inr"></i><?php echo floor($res['amount']-((1.7*$res['amount'])/100))?></span></td>
                   <?php }?>
                 </tr>
                <?php }?>
